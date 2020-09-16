@@ -12,4 +12,4 @@ Experienced Data Analyst with a demonstrated history of working in the Banking, 
 
 ### Contact me
 
-[tayaba.saleem@yahoo.com](mailto:email@domain.com)
+[tayaba_saleem@yahoo.com](mailto:email@domain.com)
