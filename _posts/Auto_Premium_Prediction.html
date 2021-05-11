@@ -1,0 +1,134 @@
+---
+title: "Auto_Premium_Prediction"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+library(ggplot2)
+library(GGally)
+library(psych)
+library(ggiraph)
+library(ggiraphExtra)
+library(plyr)
+library(dplyr)
+```
+
+###Step1: Load the Insurance dataset into R
+```{r pressure, echo=FALSE}
+auto_insurance <- read.csv("C:/Users/tayab/OneDrive/Desktop/Knowledge Mining/Insurance V5.csv")
+
+```
+###Step2: Explore the auto_insurance dataset
+```{r eda}
+str(auto_insurance)
+```
+#Through this oberservation we know we have 6 variables and 1338 observations 
+
+###Step2.1 Distributions of the variable 
+#I believe linear regression model will fits best for this data set becuase it seems as the premium charges 
+#is a depent variable based upon other variables in the dataset. 
+
+```{r}
+summary(auto_insurance$premium_amount)
+
+```
+#Something to note is that the median value is quite less than meanu value. Which means their is a right skew in distribution  of premium_amount. We can take a look at the histogram to better understand the premium_distrubution. 
+
+```{r}
+## plotting histogram for premium cost variable
+hist(auto_insurance$premium_amount, xlab="Premium Amount Charges" , main="Histogram representing insurance Premium Charges", col="cyan4")
+
+```
+#From the histogram premium we can tell that most of the polocies pay premium of less $30000 and very few that pay more then 60000. Let's look at the distribut in a normalized view below.
+```{r}
+## creating normalized plot using log transformation
+auto_insurance$n_charges = log(auto_insurance$premium_amount)
+
+## plotting normalized histogram for insurance premium
+hist(auto_insurance$n_charges,xlab="Normalized Premium Charges" , 
+     main="Histogram representing normalized insurance charges", col="blue")
+```
+
+##Now that we know the distribution of premium amount lets look at the distribution for gender and region
+```{r}
+ggplot(as.data.frame(table(auto_insurance["gender"])), aes(x=Var1, y=Freq, fill=Var1)) + 
+  geom_bar(stat = "identity") + labs(x = "gender", y="Count", fill = "gender")
+```
+
+```{r}
+ggplot(as.data.frame(table(auto_insurance["region"])), aes(x=Var1, y=Freq, fill=Var1)) + 
+  geom_bar(stat = "identity") + labs(x = "region", y="Count", fill = "region")
+```
+##From this we can see that our categorical variables gendar and region are evenly distributed. 
+
+###Step 2.2 Let's now look at the correlation between the variables 
+```{r}
+#Correlation between the variables 
+cor(auto_insurance[c("annual_mileage", "number_of_DUI", "credit_score", "premium_amount")])
+```
+#From the correlation we do see that there is a moderately uphill positive correlation between the annual mileage, number_of_DUI and premium amount. We also see a moderate downhill negative relationship between credit_score and premium amount.
+ 
+```{r}
+#First, let's take a look at the relationship between mileage drive per year and premium amt. 
+plot(auto_insurance$annual_mileage , auto_insurance$premium_amount, main="Linear relationship between 'annual mileage' and 'premium amt'", xlab="annual mileage", ylab="Premium charges", col="blue")
+```
+##From this we can tell it's a linear relationship. As the annual mileage increase so does the premium charges. 
+
+#Let's looks at the pairwise scatterplots and see what correlation we find. 
+```{r}
+pairs(auto_insurance[c("annual_mileage", "number_of_DUI", "credit_score", "premium_amount")])
+
+
+```
+
+##From the this scotterplots we can notice that with higher annual_mileage insurance charges seem to be higher. The other thing we notice people with higher credit_score have to pay slightly less in insurance premium. 
+
+
+###Step3: Train a regression model on the insurance data 
+```{r}
+insurance_model <- lm(data = auto_insurance, formula = premium_amount ~ gender + annual_mileage + number_of_DUI + credit_score 
+                    + region  )
+insurance_model
+
+summary(insurance_model)
+
+```
+#Coefficients of gendermale, number_of_DUI and regionsoutheast are postively related to premium_amount. While annual_mileage, credit_score and regionnorthwest are negatively relate to the premium_amount.
+#For each year of increase in number_of_DUI the premium value is expected to increase by 1081. Like wise if the insured person is male the premium value are up by 753 considering with other variable. If the person lives in the region southeast we the premium value to by 1231. If the premium value is good then we see decline in premium value by 132 and if the person lives in the regionnorthwest we see the premium value to be decrease by 68. 
+
+```{r}
+summary(insurance_model)
+```
+```{r}
+View(insurance_model)
+
+```
+
+```{r}
+auto_insurance$residuals <- insurance_model$residuals
+View(auto_insurance)
+```
+
+```{r}
+auto_insurance$predicted <- insurance_model$fitted.values
+View(auto_insurance)
+```
+```{r}
+predict(insurance_model, data.frame(gender = c("male", "female", "male"), annual_mileage = c(6000, 5100, 1000 ), number_of_DUI = c(8,1,0), credit_score = c(300, 661, 850), region = c("southwest", "southwest", "southwest" ) ) )
+```
+
+```{r}
+predict(insurance_model, data.frame(gender = c("male"), annual_mileage = c(6000 ), number_of_DUI = c(8), credit_score = c(300), region = c("southwest" ) ) )
+```
+```{r}
+predict(insurance_model, data.frame(gender = c( "female"), annual_mileage = c(5100 ), number_of_DUI = c(1), credit_score = c( 661), region = c( "southwest" ) ) )
+```
+
+```{r}
+predict(insurance_model, data.frame(gender = c("male"), annual_mileage = c( 1000 ), number_of_DUI = c(0), credit_score = c( 850), region = c( "southwest" ) ) )
+```
+
